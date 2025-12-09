@@ -12,6 +12,8 @@
 
 This project utilizes Deep Learning and Transfer Learning techniques to classify white blood cells from microscopic images. The goal is to accurately distinguish between normal cells and those affected by **Acute Lymphoblastic Leukemia (ALL)** using the C-NMC dataset.
 
+Acute lymphoblastic leukemia (ALL) is the most common type of childhood cancer and accounts for approximately 25% of the pediatric cancers. These cells have been segmented from microscopic images and are representative of images in the real-world because they contain some staining noise and illumination errors, although these errors have largely been fixed in the course of acquisition. The task of identifying immature leukemic blasts from normal cells under the microscope is challenging due to morphological similarity and thus the ground truth labels were annotated by an expert oncologist.
+
 **Performance Metric:**
 > **95.50% Test Accuracy** achieved using custom optimization strategies.
 
@@ -116,7 +118,30 @@ Launch Jupyter to view and run the training process.
 jupyter notebook Leukemia_Classification.ipynb
 ```
 
-### 5. Navigate into the directory
-```bash
-cd leukemia-classification
-```
+---
+
+## 🧩 Model Evaluation: Confusion Matrix
+
+The confusion matrix below visualizes the performance of the classification model on the **Test Set** (1600 images).
+
+### Visual Representation
+
+<img width="962" height="978" alt="output3" src="https://github.com/user-attachments/assets/d8cf90e2-2c0c-49af-b11d-8c1b4d5e8044" />
+
+### Numerical Breakdown
+Based on the classification report, the model distinguishes between **ALL (Leukemia)** and **HEM (Normal)** cells with high precision.
+
+| | **Predicted: ALL** | **Predicted: HEM** |
+| :--- | :---: | :---: |
+| **Actual: ALL** | **1068** *(True Positives)* | 23 *(False Negatives)* |
+| **Actual: HEM** | 49 *(False Positives)* | **460** *(True Negatives)* |
+
+### Classification Report Summary
+| Class | Precision | Recall | F1-Score |
+| :--- | :--- | :--- | :--- |
+| **ALL** | 0.96 | 0.98 | 0.97 |
+| **HEM** | 0.95 | 0.90 | 0.93 |
+| **Overall Accuracy** | | | **95%** |
+
+
+
