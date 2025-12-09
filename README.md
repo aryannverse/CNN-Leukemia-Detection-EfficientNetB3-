@@ -8,9 +8,6 @@
 
 ---
 
-<img width="1568" height="1580" alt="output" src="https://github.com/user-attachments/assets/43b6b0d9-bff5-4819-b06e-94e1af3fc23a" />
-
----
 ## 📊 Project Overview
 
 This project utilizes Deep Learning and Transfer Learning techniques to classify white blood cells from microscopic images. The goal is to accurately distinguish between normal cells and those affected by **Acute Lymphoblastic Leukemia (ALL)** using the C-NMC dataset.
@@ -33,6 +30,8 @@ We employ **EfficientNetB3**, a state-of-the-art convolutional neural network th
 | **4. Dense** | **Fully Connected (256)** | Custom layer with L1/L2 regularization and ReLU activation. |
 | **5. Dropout** | **Dropout (0.45)** | Randomly sets 45% of neurons to 0 to prevent overfitting. |
 | **6. Output** | **Dense (2)** | Softmax layer for binary classification probabilities. |
+
+<img width="1568" height="1580" alt="output" src="https://github.com/user-attachments/assets/43b6b0d9-bff5-4819-b06e-94e1af3fc23a" />
 
 ---
 
@@ -89,7 +88,7 @@ Open your terminal or command prompt and run:
 
 ```bash
 # Clone the project
-git clone <https://github.com/aryannverse/CNN-Leukemia-Detection-EfficientNetB3-.git>
+git clone https://github.com/aryannverse/CNN-Leukemia-Detection-EfficientNetB3-.git
 ```
 
 ### 2. Install Dependencies
@@ -114,5 +113,7 @@ Launch Jupyter to view and run the training process.
 jupyter notebook Leukemia_Classification.ipynb
 ```
 
-# Navigate into the directory
+### 5. Navigate into the directory
+```bash
 cd leukemia-classification
+```
