@@ -1,13 +1,16 @@
 # 🩸 Leukemia Classification using EfficientNetB3
 ### *Acute Lymphoblastic Leukemia (ALL) Detection System*
 
-![Python](https://img.shields.io/badge/Python-3.8%2B-blue?style=for-the-badge&logo=python)
+![Python](https://img.shields.io/badge/Python-3.12%2B-blue?style=for-the-badge&logo=python)
 ![TensorFlow](https://img.shields.io/badge/TensorFlow-2.X-orange?style=for-the-badge&logo=tensorflow)
 ![Keras](https://img.shields.io/badge/Keras-API-red?style=for-the-badge&logo=keras)
 ![Status](https://img.shields.io/badge/Status-Completed-success?style=for-the-badge)
 
 ---
 
+<img width="1568" height="1580" alt="output" src="https://github.com/user-attachments/assets/43b6b0d9-bff5-4819-b06e-94e1af3fc23a" />
+
+---
 ## 📊 Project Overview
 
 This project utilizes Deep Learning and Transfer Learning techniques to classify white blood cells from microscopic images. The goal is to accurately distinguish between normal cells and those affected by **Acute Lymphoblastic Leukemia (ALL)** using the C-NMC dataset.
@@ -58,6 +61,8 @@ A custom callback loop monitors training to implement:
 2.  **Early Stopping:** Halts training after specific patience thresholds to save resources.
 3.  **Model Checkpointing:** Saves the weights of the epoch with the highest validation accuracy.
 
+<img width="1611" height="712" alt="output2" src="https://github.com/user-attachments/assets/467387dc-dd12-4ec0-a366-80a4fae2be20" />
+
 ---
 
 ## 📂 The Dataset
@@ -84,7 +89,30 @@ Open your terminal or command prompt and run:
 
 ```bash
 # Clone the project
-git clone <YOUR_REPOSITORY_URL_HERE>
+git clone <https://github.com/aryannverse/CNN-Leukemia-Detection-EfficientNetB3-.git>
+```
+
+### 2. Install Dependencies
+Install the required libraries listed in `requirements.txt`.
+
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Download Data
+1.  Download the dataset from the [Kaggle Link](https://www.kaggle.com/datasets/andrewmvd/leukemia-classification).
+2.  Extract the downloaded folder.
+3.  **Important:** Ensure the path in the notebook matches your local data location:
+    ```python
+    data_dir = 'C-NMC_Leukemia/training_data'
+    ```
+
+### 4. Run the Notebook
+Launch Jupyter to view and run the training process.
+
+```bash
+jupyter notebook Leukemia_Classification.ipynb
+```
 
 # Navigate into the directory
 cd leukemia-classification
