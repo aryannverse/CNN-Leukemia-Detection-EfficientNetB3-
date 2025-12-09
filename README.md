@@ -31,6 +31,8 @@ We employ **EfficientNetB3**, a state-of-the-art convolutional neural network th
 | **5. Dropout** | **Dropout (0.45)** | Randomly sets 45% of neurons to 0 to prevent overfitting. |
 | **6. Output** | **Dense (2)** | Softmax layer for binary classification probabilities. |
 
+--> Download the EfficientNetB3 from this [Google Drive Link](https://drive.google.com/file/d/1MwS0mp9BwDKNzX06uT21iTxRw8qsHtxK/view?usp=sharing).
+
 <img width="1568" height="1580" alt="output" src="https://github.com/user-attachments/assets/43b6b0d9-bff5-4819-b06e-94e1af3fc23a" />
 
 ---
@@ -101,7 +103,8 @@ pip install -r requirements.txt
 ### 3. Download Data
 1.  Download the dataset from the [Kaggle Link](https://www.kaggle.com/datasets/andrewmvd/leukemia-classification).
 2.  Extract the downloaded folder.
-3.  **Important:** Ensure the path in the notebook matches your local data location:
+3.  Download the EfficientNetB3 from this [Google Drive Link](https://drive.google.com/file/d/1MwS0mp9BwDKNzX06uT21iTxRw8qsHtxK/view?usp=sharing).
+4.  **Important:** Ensure the path in the notebook matches your local data location:
     ```python
     data_dir = 'C-NMC_Leukemia/training_data'
     ```
