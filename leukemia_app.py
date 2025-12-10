@@ -19,8 +19,8 @@ st.set_page_config(
 IMG_SIZE = (224, 224)
 CLASS_NAMES = ['all', 'hem']
 
-MODEL_URL = "https://efficientnet-trained-model-bucket.s3.eu-north-1.amazonaws.com/efficientnet-trained.keras"
-LOCAL_MODEL_PATH = "efficientnet-trained.keras"
+MODEL_URL = "https://efficientnet-trained-model-bucket.s3.eu-north-1.amazonaws.com/efficientnet-trained.h5"
+LOCAL_MODEL_PATH = "efficientnet-trained.h5"
 
 @st.cache_resource
 def load_model_from_s3(url, local_path):
