@@ -8,7 +8,7 @@ from PIL import Image
 import plotly.graph_objects as go
 import plotly.express as px
 import os
-import importlib, sys
+import importlib
 
 st.set_page_config(
     page_title="Leukemia Classification Dashboard",
@@ -22,12 +22,22 @@ CLASS_NAMES = ['all', 'hem']
 LOCAL_MODEL_PATH = "efficientnet-trained.h5"
 
 
-st.write("tf:", tf.__version__)
+
+
+st.write("TensorFlow version:", tf.__version__)
+
 try:
     import keras
-    st.write("keras:", keras.__version__)
+    st.write("Keras version:", keras.__version__)
 except Exception as e:
-    st.write("keras import error:", e)
+    st.write("Keras import failed:", e)
+
+try:
+    importlib.import_module("keras.src.engine.functional")
+    st.write("Keras internal module import:", "OK")
+except Exception as e:
+    st.write("Keras internal module import failed:", e)
+
 
 try:
     importlib.import_module("keras.src.engine.functional")
