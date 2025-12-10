@@ -21,13 +21,6 @@ CLASS_NAMES = ['all', 'hem']
 
 LOCAL_MODEL_PATH = "efficientnet-trained.h5"
 
-
-
-try:
-    importlib.import_module("keras.src.engine.functional")
-    st.write("keras.src.engine.functional import OK")
-except Exception as e:
-    st.write("keras.src.engine.functional import failed:", e)source
 def load_model_local(local_path):
     if not os.path.exists(local_path):
         st.error(f"Model file not found locally: {local_path}")
