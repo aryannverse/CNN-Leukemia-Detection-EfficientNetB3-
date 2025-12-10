@@ -19,7 +19,15 @@ IMG_SIZE = (224, 224)
 CLASS_NAMES = ['all', 'hem']
 
 LOCAL_MODEL_PATH = "efficientnet-trained.h5"
+#temp begin
+st.write("File exists:", os.path.exists("efficientnet-trained.h5"))
 
+if os.path.exists("efficientnet-trained.h5"):
+    st.write("File size:", os.path.getsize("efficientnet-trained.h5"))
+    with open("efficientnet-trained.h5", "rb") as f:
+        head = f.read(200)
+    st.text(head)
+#temp end
 @st.cache_resource
 def load_model_local(local_path):
     if not os.path.exists(local_path):
