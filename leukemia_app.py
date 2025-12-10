@@ -19,7 +19,7 @@ IMG_SIZE = (224, 224)
 CLASS_NAMES = ['all', 'hem']
 
 # PUBLIC S3 URL for pre-trained model 
-MODEL_URL = "https://efficientnet-trained-model-bucket.s3.eu-north-1.amazonaws.com/efficientnet-trained.h5"
+MODEL_FILE = "https://efficientnet-trained-model-bucket.s3.eu-north-1.amazonaws.com/efficientnet-trained.h5"
 
 # Local cache path
 #MODEL_FILE = "efficientnet-trained.h5" (can use if locally trained model available)
