@@ -19,47 +19,48 @@ st.set_page_config(
 IMG_SIZE = (224, 224)
 CLASS_NAMES = ['all', 'hem']
 
-# S3 Configuration
-MODEL_URL = "https://efficientnet-trained-model-bucket.s3.eu-north-1.amazonaws.com/efficientnet-trained.h5"
-LOCAL_MODEL_PATH = "efficientnet-trained.h5"
-
+MODEL_URL = "https://efficientnet-trained-model-bucket.s3.eu-north-1.amazonaws.com/efficientnet-trained.keras"
+LOCAL_MODEL_PATH = "efficientnet-trained.keras"
 
 @st.cache_resource
 def load_model_from_s3(url, local_path):
-    """
-    Downloads the model from S3 if not present, then loads it into TensorFlow.
-    Uses st.cache_resource to keep the model in memory.
-    """
-    # 1. Download the file if it doesn't exist locally
-    if not os.path.exists(local_path):
-        try:
-            with st.spinner(f'Downloading model from S3... this may take a minute.'):
-                response = requests.get(url, stream=True)
-                response.raise_for_status()  # Raise error for bad status codes
-
-                with open(local_path, "wb") as f:
-                    for chunk in response.iter_content(chunk_size=8192):
-                        f.write(chunk)
-            st.success("Model downloaded successfully!")
-        except Exception as e:
-            st.error(f"Error downloading model from S3: {e}")
-            return None
-
-    # 2. Load the model using Keras
     try:
-        model = tf.keras.models.load_model(local_path)
+        if url.startswith("http://") or url.startswith("https://"):
+            local_path = tf.keras.utils.get_file(fname=os.path.basename(url), origin=url)
+        else:
+            local_path = local_path
+    except Exception as e:
+        try:
+            if not os.path.exists(local_path):
+                with st.spinner('Downloading model from S3...'):
+                    resp = requests.get(url, stream=True)
+                    resp.raise_for_status()
+                    with open(local_path, "wb") as f:
+                        for chunk in resp.iter_content(chunk_size=8192):
+                            if chunk:
+                                f.write(chunk)
+            else:
+                pass
+        except Exception as e2:
+            st.error(f"Error downloading model: {e2}")
+            return None
+    try:
+        model = tf.keras.models.load_model(local_path, compile=False)
         return model
     except Exception as e:
         st.error(f"Error loading model from file: {e}")
         return None
 
-
 def preprocess_image(image):
+    image = image.convert("RGB")
     image = image.resize(IMG_SIZE)
-    img_array = np.array(image)
+    img_array = np.array(image).astype("float32") / 255.0
+    if img_array.ndim == 2:
+        img_array = np.stack([img_array]*3, axis=-1)
+    if img_array.shape[-1] == 4:
+        img_array = img_array[..., :3]
     img_array = np.expand_dims(img_array, axis=0)
     return img_array
-
 
 st.sidebar.title("🩸 C-NMC Classification")
 st.sidebar.info("Acute Lymphoblastic Leukemia Detection System")
@@ -107,7 +108,6 @@ elif app_mode == "Evaluation Metrics":
 
     st.markdown("### Training History")
 
-    # Hardcoded metrics for visualization purposes
     epochs = list(range(1, 20))
     train_acc = [82.485, 88.756, 91.088, 92.428, 93.648, 94.184, 94.666, 95.417, 97.293,
                  97.856, 98.258, 98.459, 99.049, 98.847, 99.317, 99.558, 99.223, 99.571, 99.611]
@@ -151,7 +151,6 @@ elif app_mode == "Evaluation Metrics":
 elif app_mode == "Live Prediction":
     st.title("Live Model Prediction")
 
-    # Load Model from S3 using the cached function
     model = load_model_from_s3(MODEL_URL, LOCAL_MODEL_PATH)
 
     if model:
@@ -172,10 +171,14 @@ elif app_mode == "Live Prediction":
                         processed_img = preprocess_image(image)
 
                         prediction = model.predict(processed_img)
+                        if prediction.ndim == 1 or prediction.shape[-1] == 1:
+                            pred_probs = np.array([1 - prediction.flatten()[0], prediction.flatten()[0]])
+                        else:
+                            pred_probs = prediction.flatten()
 
-                        predicted_class_idx = np.argmax(prediction)
+                        predicted_class_idx = int(np.argmax(pred_probs))
                         predicted_class = CLASS_NAMES[predicted_class_idx]
-                        confidence = np.max(prediction) * 100
+                        confidence = float(np.max(pred_probs)) * 100
 
                         if predicted_class == 'all':
                             st.error(f"**Prediction: ALL (Leukemia)**")
@@ -184,11 +187,11 @@ elif app_mode == "Live Prediction":
                             st.success(f"**Prediction: HEM (Normal)**")
                             st.markdown("Result: **Normal / Hemaglobin** Detected")
 
-                        st.progress(int(confidence))
+                        st.progress(min(max(int(confidence), 0), 100))
                         st.write(f"Model Confidence: **{confidence:.2f}%**")
 
                         with st.expander("See probability details"):
-                            prob_df = pd.DataFrame(prediction, columns=[c.upper() for c in CLASS_NAMES])
+                            prob_df = pd.DataFrame([pred_probs], columns=[c.upper() for c in CLASS_NAMES])
                             st.dataframe(prob_df.style.format("{:.2%}"))
     else:
         st.error("Model could not be loaded. Please check the S3 URL or your internet connection.")
