@@ -8,7 +8,6 @@ from PIL import Image
 import plotly.graph_objects as go
 import plotly.express as px
 import os
-import requests
 
 st.set_page_config(
     page_title="Leukemia Classification Dashboard",
@@ -19,31 +18,13 @@ st.set_page_config(
 IMG_SIZE = (224, 224)
 CLASS_NAMES = ['all', 'hem']
 
-MODEL_URL = "https://efficientnet-trained-model-bucket.s3.eu-north-1.amazonaws.com/efficientnet-trained.h5"
 LOCAL_MODEL_PATH = "efficientnet-trained.h5"
 
 @st.cache_resource
-def load_model_from_s3(url, local_path):
-    try:
-        if url.startswith("http://") or url.startswith("https://"):
-            local_path = tf.keras.utils.get_file(fname=os.path.basename(url), origin=url)
-        else:
-            local_path = local_path
-    except Exception as e:
-        try:
-            if not os.path.exists(local_path):
-                with st.spinner('Downloading model from S3...'):
-                    resp = requests.get(url, stream=True)
-                    resp.raise_for_status()
-                    with open(local_path, "wb") as f:
-                        for chunk in resp.iter_content(chunk_size=8192):
-                            if chunk:
-                                f.write(chunk)
-            else:
-                pass
-        except Exception as e2:
-            st.error(f"Error downloading model: {e2}")
-            return None
+def load_model_local(local_path):
+    if not os.path.exists(local_path):
+        st.error(f"Model file not found locally: {local_path}")
+        return None
     try:
         model = tf.keras.models.load_model(local_path, compile=False)
         return model
@@ -151,7 +132,7 @@ elif app_mode == "Evaluation Metrics":
 elif app_mode == "Live Prediction":
     st.title("Live Model Prediction")
 
-    model = load_model_from_s3(MODEL_URL, LOCAL_MODEL_PATH)
+    model = load_model_local(LOCAL_MODEL_PATH)
 
     if model:
         st.markdown("### Upload Cell Image")
@@ -194,7 +175,7 @@ elif app_mode == "Live Prediction":
                             prob_df = pd.DataFrame([pred_probs], columns=[c.upper() for c in CLASS_NAMES])
                             st.dataframe(prob_df.style.format("{:.2%}"))
     else:
-        st.error("Model could not be loaded. Please check the S3 URL or your internet connection.")
+        st.error("Model could not be loaded. Please check that 'efficientnet-trained.h5' is present in the app repository.")
 
 st.markdown("---")
-st.markdown("Created based on Leukemia Classification Jupyter Notebook | Source: S3 Bucket")
+st.markdown("Created based on Leukemia Classification Jupyter Notebook | Source: Repo")
