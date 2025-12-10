@@ -1,202 +1,179 @@
 import streamlit as st
+import tensorflow as tf
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import itertools
-from sklearn.metrics import confusion_matrix, classification_report
-import tensorflow as tf
-from tensorflow.keras.models import Sequential
-from tensorflow.keras import regularizers
-from tensorflow.keras.layers import BatchNormalization, Dense, Dropout
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.optimizers import Adamax
+import seaborn as sns
+from PIL import Image
+import plotly.graph_objects as go
+import plotly.express as px
+import os
 
-def plot_training(history):
+st.set_page_config(
+    page_title="Leukemia Classification Dashboard",
+    page_icon="🩸",
+    layout="wide"
+)
 
-    tr_acc = history['accuracy']
-    tr_loss = history['loss']
-    val_acc = history['val_accuracy']
-    val_loss = history['val_loss']
-    index_loss = np.argmin(val_loss)
-    val_lowest = val_loss[index_loss]
-    index_acc = np.argmax(val_acc)
-    acc_highest = val_acc[index_acc]
-    Epochs = [i + 1 for i in range(len(tr_acc))]
-    loss_label = f'best epoch= {str(index_loss + 1)}'
-    acc_label = f'best epoch= {str(index_acc + 1)}'
-
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 6))
-    plt.style.use('fivethirtyeight')
-
-    ax1.plot(Epochs, tr_loss, 'r', label='Training loss')
-    ax1.plot(Epochs, val_loss, 'g', label='Validation loss')
-    ax1.scatter(index_loss + 1, val_lowest, s=150, c='blue', label=loss_label)
-    ax1.set_title('Training and Validation Loss')
-    ax1.set_xlabel('Epochs')
-    ax1.set_ylabel('Loss')
-    ax1.legend()
-
-    ax2.plot(Epochs, tr_acc, 'r', label='Training Accuracy')
-    ax2.plot(Epochs, val_acc, 'g', label='Validation Accuracy')
-    ax2.scatter(index_acc + 1, acc_highest, s=150, c='blue', label=acc_label)
-    ax2.set_title('Training and Validation Accuracy')
-    ax2.set_xlabel('Epochs')
-    ax2.set_ylabel('Accuracy')
-    ax2.legend()
-
-    plt.tight_layout()
-    return fig
+IMG_SIZE = (224, 224)
+CLASS_NAMES = ['all', 'hem']
+MODEL_FILE = "efficientnet-trained.h5"
 
 
-def plot_confusion_matrix(cm, classes, normalize=False, title='Confusion Matrix', cmap=plt.cm.Blues):
 
-    fig, ax = plt.subplots(figsize=(8, 8))
-    im = ax.imshow(cm, interpolation='nearest', cmap=cmap)
-    ax.set_title(title)
-    fig.colorbar(im)
+@st.cache_resource
+def load_classification_model(model_path):
+    try:
+        model = tf.keras.models.load_model(model_path)
+        return model
+    except Exception as e:
+        return None
 
-    tick_marks = np.arange(len(classes))
-    ax.set_xticks(tick_marks)
-    ax.set_xticklabels(classes, rotation=45)
-    ax.set_yticks(tick_marks)
-    ax.set_yticklabels(classes)
 
-    if normalize:
-        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-        st.write('Normalized Confusion Matrix')
+def preprocess_image(image):
+    image = image.resize(IMG_SIZE)
+    img_array = np.array(image)
+    img_array = np.expand_dims(img_array, axis=0)
+    return img_array
+
+
+st.sidebar.title("🩸 C-NMC Classification")
+st.sidebar.info("Acute Lymphoblastic Leukemia Detection System")
+
+app_mode = st.sidebar.radio(
+    "Navigation",
+    ["Project Overview", "Evaluation Metrics", "Live Prediction"]
+)
+
+if app_mode == "Project Overview":
+    st.title("Project Overview")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("""
+        ### About the Model
+        This application utilizes a Deep Learning model based on **EfficientNetB3** to classify Leukemia from microscopic blood cell images.
+
+        **Model Architecture:**
+        *   **Base:** EfficientNetB3 (Pre-trained on ImageNet)
+        *   **Custom Head:** 
+            *   Batch Normalization
+            *   Dense (256 units, ReLU, L1/L2 Regularization)
+            *   Dropout (0.45)
+            *   Output Dense (2 units, Softmax)
+
+        **Optimizer:** Adamax (LR=0.001)
+        """)
+
+    with col2:
+        st.markdown("### Dataset Distribution (Test Set)")
+        data = {
+            'Class': ['ALL (Leukemia)', 'HEM (Normal)'],
+            'Count': [1091, 509]
+        }
+        df_dist = pd.DataFrame(data)
+
+        fig = px.pie(df_dist, values='Count', names='Class',
+                     title='Class Distribution in Test Data',
+                     color_discrete_sequence=['#ff6b6b', '#4ecdc4'])
+        st.plotly_chart(fig, use_container_width=True)
+
+elif app_mode == "Evaluation Metrics":
+    st.title("Model Evaluation Metrics")
+
+    st.markdown("### Training History")
+
+    epochs = list(range(1, 20))
+    train_acc = [82.485, 88.756, 91.088, 92.428, 93.648, 94.184, 94.666, 95.417, 97.293,
+                 97.856, 98.258, 98.459, 99.049, 98.847, 99.317, 99.558, 99.223, 99.571, 99.611]
+    val_acc = [70.169, 73.671, 88.993, 86.116, 88.430, 87.805, 93.183, 91.307, 93.684,
+               95.122, 94.371, 94.809, 95.810, 95.872, 95.935, 96.185, 96.248, 95.872, 96.060]
+
+    train_loss = [5.135, 2.546, 1.479, 0.888, 0.560, 0.392, 0.296, 0.237, 0.185,
+                  0.164, 0.145, 0.132, 0.118, 0.118, 0.107, 0.099, 0.104, 0.092, 0.090]
+    val_loss = [3.637, 2.381, 1.149, 0.864, 0.546, 0.437, 0.296, 0.303, 0.253,
+                0.223, 0.229, 0.221, 0.201, 0.194, 0.193, 0.180, 0.181, 0.183, 0.180]
+
+    tab1, tab2, tab3 = st.tabs(["Accuracy Plot", "Loss Plot", "Confusion Matrix"])
+
+    with tab1:
+        fig_acc = go.Figure()
+        fig_acc.add_trace(go.Scatter(x=epochs, y=train_acc, mode='lines+markers', name='Train Accuracy'))
+        fig_acc.add_trace(go.Scatter(x=epochs, y=val_acc, mode='lines+markers', name='Validation Accuracy'))
+        fig_acc.update_layout(title="Accuracy over Epochs", xaxis_title="Epoch", yaxis_title="Accuracy (%)")
+        st.plotly_chart(fig_acc, use_container_width=True)
+
+    with tab2:
+        fig_loss = go.Figure()
+        fig_loss.add_trace(go.Scatter(x=epochs, y=train_loss, mode='lines+markers', name='Train Loss'))
+        fig_loss.add_trace(go.Scatter(x=epochs, y=val_loss, mode='lines+markers', name='Validation Loss'))
+        fig_loss.update_layout(title="Loss over Epochs", xaxis_title="Epoch", yaxis_title="Loss")
+        st.plotly_chart(fig_loss, use_container_width=True)
+
+    with tab3:
+        cm_data = [[1068, 23], [49, 460]]
+
+        fig_cm = plt.figure(figsize=(8, 6))
+        sns.heatmap(cm_data, annot=True, fmt='d', cmap='Blues',
+                    xticklabels=CLASS_NAMES, yticklabels=CLASS_NAMES)
+        plt.xlabel('Predicted')
+        plt.ylabel('Actual')
+        plt.title('Confusion Matrix (Test Data)')
+        st.pyplot(fig_cm)
+
+        st.metric(label="Overall Test Accuracy", value="95.5%")
+
+elif app_mode == "Live Prediction":
+    st.title("Live Model Prediction")
+
+    model = None
+    if os.path.exists(MODEL_FILE):
+        model = load_classification_model(MODEL_FILE)
+        if model:
+            st.success(f"Successfully loaded model: **{MODEL_FILE}**")
+        else:
+            st.error(f"Failed to load **{MODEL_FILE}**. Please check if the file is corrupted.")
     else:
-        st.write('Confusion Matrix, Without Normalization')
+        st.error(f"Model file **{MODEL_FILE}** not found in the directory.")
+        st.info(f"Please ensure '{MODEL_FILE}' is in the same folder as this script.")
 
-    thresh = cm.max() / 2.
-    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        ax.text(j, i, cm[i, j],
-                horizontalalignment='center',
-                color='white' if cm[i, j] > thresh else 'black')
+    if model:
+        st.markdown("### Upload Cell Image")
+        uploaded_file = st.file_uploader("Choose a microscopic image...", type=["jpg", "png", "jpeg", "bmp"])
 
-    plt.tight_layout()
-    ax.set_ylabel('True Label')
-    ax.set_xlabel('Predicted Label')
-    return fig, cm
+        if uploaded_file is not None:
+            col1, col2 = st.columns(2)
 
+            with col1:
+                image = Image.open(uploaded_file)
+                st.image(image, caption='Uploaded Image', use_column_width=True)
 
-sim_history = {
-    'loss': [5.135, 2.546, 1.479, 0.888, 0.560, 0.392, 0.296, 0.237, 0.185, 0.164, 0.145, 0.132, 0.118, 0.118, 0.107,
-             0.099, 0.104, 0.092, 0.090],
-    'accuracy': [0.82485, 0.88756, 0.91088, 0.92428, 0.93648, 0.94184, 0.94666, 0.95417, 0.97293, 0.97856, 0.98258,
-                 0.98459, 0.99049, 0.98847, 0.99317, 0.99558, 0.99223, 0.99571, 0.99611],
-    'val_loss': [3.63725, 2.38163, 1.14977, 0.86442, 0.54691, 0.43709, 0.29600, 0.30395, 0.25357, 0.22330, 0.22930,
-                 0.22191, 0.20185, 0.19495, 0.19349, 0.18045, 0.18132, 0.18307, 0.18058],
-    'val_accuracy': [0.70169, 0.73671, 0.88993, 0.86116, 0.88430, 0.87805, 0.93183, 0.91307, 0.93684, 0.95122, 0.94371,
-                     0.94809, 0.95810, 0.95872, 0.95935, 0.96185, 0.96248, 0.95872, 0.96060]
-}
+            with col2:
+                st.markdown("### Analysis Results")
+                if st.button("Predict Classification"):
+                    with st.spinner('Analyzing cell structure...'):
+                        processed_img = preprocess_image(image)
 
+                        prediction = model.predict(processed_img)
 
-sim_scores = {
-    'Train Loss': 0.0843,
-    'Train Accuracy': 0.9962,
-    'Validation Loss': 0.1711,
-    'Validation Accuracy': 0.9638,
-    'Test Loss': 0.2188,
-    'Test Accuracy': 0.9550
-}
+                        predicted_class_idx = np.argmax(prediction)
+                        predicted_class = CLASS_NAMES[predicted_class_idx]
+                        confidence = np.max(prediction) * 100
 
+                        if predicted_class == 'all':
+                            st.error(f"**Prediction: ALL (Leukemia)**")
+                            st.markdown("Result: **Acute Lymphoblastic Leukemia** Detected")
+                        else:
+                            st.success(f"**Prediction: HEM (Normal)**")
+                            st.markdown("Result: **Normal / Hemaglobin** Detected")
 
-sim_classes = ['all', 'hem']
-sim_cm = np.array([[1068, 23], [49, 460]])
-sim_clf_report = """
-              precision    recall  f1-score   support
+                        st.progress(int(confidence))
+                        st.write(f"Model Confidence: **{confidence:.2f}%**")
 
-         all       0.96      0.98      0.97      1091
-         hem       0.95      0.90      0.93       509
-
-    accuracy                           0.95      1600
-   macro avg       0.95      0.94      0.95      1600
-weighted avg       0.95      0.95      0.95      1600
-"""
-
-
-sim_model_summary = """
-Model: "sequential"
-_________________________________________________________________
- Layer (type)                Output Shape              Param #   
-=================================================================
- efficientnetb3 (Functional  (None, 1536)              10783535  
- )                                                               
-
- batch_normalization (Batch  (None, 1536)              6144      
- Normalization)                                                  
-
- dense (Dense)               (None, 256)               393472    
-
- dropout (Dropout)           (None, 256)               0         
-
- dense_1 (Dense)             (None, 2)                 514       
-
-=================================================================
-Total params: 11183665 (42.66 MB)
-Trainable params: 11093290 (42.32 MB)
-Non-trainable params: 90375 (353.03 KB)
-_________________________________________________________________
-"""
-
-
-
-st.title("🔬 Leukemia Classification Model Analysis")
-
-st.markdown("""
-This application displays the results from the `Leukemia_Classification.ipynb` Jupyter Notebook,
-which trains an **EfficientNetB3** model for leukemia image classification.
-""")
-
-
-st.header("1. Model Architecture (Sequential Model)")
-st.code(sim_model_summary, language='text')
-
-
-st.header("2. Training History")
-st.subheader("Loss and Accuracy Across Epochs")
-st.pyplot(plot_training(sim_history))
-
-
-st.header("3. Model Performance Scores")
-st.markdown("---")
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.subheader("Training Scores")
-    st.metric("Loss", f"{sim_scores['Train Loss']:.4f}")
-    st.metric("Accuracy", f"{sim_scores['Train Accuracy']:.4f}")
-
-with col2:
-    st.subheader("Validation Scores")
-    st.metric("Loss", f"{sim_scores['Validation Loss']:.4f}")
-    st.metric("Accuracy", f"{sim_scores['Validation Accuracy']:.4f}")
-
-with col3:
-    st.subheader("Test Scores")
-    st.metric("Loss", f"{sim_scores['Test Loss']:.4f}")
-    st.metric("Accuracy", f"{sim_scores['Test Accuracy']:.4f}")
-
-st.header("4. Test Set Results")
-
-st.subheader("4.1. Confusion Matrix")
-fig_cm, cm_data = plot_confusion_matrix(sim_cm, sim_classes, title='Confusion Matrix for Test Data')
-st.pyplot(fig_cm)
-st.markdown("The numbers in the matrix are:")
-st.dataframe(pd.DataFrame(cm_data, index=sim_classes, columns=sim_classes))
-
-st.info("The Confusion Matrix shows: "
-        f"**{cm_data[0, 0]}** 'all' correctly classified, "
-        f"**{cm_data[1, 1]}** 'hem' correctly classified, "
-        f"**{cm_data[0, 1]}** 'all' incorrectly classified as 'hem', and "
-        f"**{cm_data[1, 0]}** 'hem' incorrectly classified as 'all'.")
-
-st.subheader("4.2. Classification Report")
-st.code(sim_clf_report, language='text')
-
-st.markdown(
-    f"***Note:*** *The final model achieved a test accuracy of approximately **{sim_scores['Test Accuracy']:.2%}**.*")
+                        with st.expander("See probability details"):
+                            prob_df = pd.DataFrame(prediction, columns=[c.upper() for c in CLASS_NAMES])
+                            st.dataframe(prob_df.style.format("{:.2%}"))
 
 st.markdown("---")
-st.caption("Data source: Leukemia Classification Notebook.")
+st.markdown("Created based on Leukemia Classification Jupyter Notebook | Model: " + MODEL_FILE)
