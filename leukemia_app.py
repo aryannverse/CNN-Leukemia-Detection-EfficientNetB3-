@@ -23,22 +23,6 @@ LOCAL_MODEL_PATH = "efficientnet-trained.h5"
 
 
 
-
-st.write("TensorFlow version:", tf.__version__)
-
-try:
-    import keras
-    st.write("Keras version:", keras.__version__)
-except Exception as e:
-    st.write("Keras import failed:", e)
-
-try:
-    importlib.import_module("keras.src.engine.functional")
-    st.write("Keras internal module import:", "OK")
-except Exception as e:
-    st.write("Keras internal module import failed:", e)
-
-
 try:
     importlib.import_module("keras.src.engine.functional")
     st.write("keras.src.engine.functional import OK")
