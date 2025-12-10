@@ -8,6 +8,7 @@ from PIL import Image
 import plotly.graph_objects as go
 import plotly.express as px
 import os
+import importlib, sys
 
 st.set_page_config(
     page_title="Leukemia Classification Dashboard",
@@ -19,16 +20,20 @@ IMG_SIZE = (224, 224)
 CLASS_NAMES = ['all', 'hem']
 
 LOCAL_MODEL_PATH = "efficientnet-trained.h5"
-#temp begin
-st.write("File exists:", os.path.exists("efficientnet-trained.h5"))
 
-if os.path.exists("efficientnet-trained.h5"):
-    st.write("File size:", os.path.getsize("efficientnet-trained.h5"))
-    with open("efficientnet-trained.h5", "rb") as f:
-        head = f.read(200)
-    st.text(head)
-#temp end
-@st.cache_resource
+
+st.write("tf:", tf.__version__)
+try:
+    import keras
+    st.write("keras:", keras.__version__)
+except Exception as e:
+    st.write("keras import error:", e)
+
+try:
+    importlib.import_module("keras.src.engine.functional")
+    st.write("keras.src.engine.functional import OK")
+except Exception as e:
+    st.write("keras.src.engine.functional import failed:", e)source
 def load_model_local(local_path):
     if not os.path.exists(local_path):
         st.error(f"Model file not found locally: {local_path}")
