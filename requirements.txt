@@ -7,4 +7,5 @@ scikit-learn
 opencv-python
 jupyter
 plotly
-boto
+pillow
+requests
