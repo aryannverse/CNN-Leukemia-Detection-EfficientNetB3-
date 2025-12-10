@@ -8,6 +8,7 @@ from PIL import Image
 import plotly.graph_objects as go
 import plotly.express as px
 import os
+import requests
 
 st.set_page_config(
     page_title="Leukemia Classification Dashboard",
@@ -18,20 +19,38 @@ st.set_page_config(
 IMG_SIZE = (224, 224)
 CLASS_NAMES = ['all', 'hem']
 
-# PUBLIC S3 URL for pre-trained model 
-MODEL_FILE = "https://efficientnet-trained-model-bucket.s3.eu-north-1.amazonaws.com/efficientnet-trained.h5"
-
-# Local cache path
-#MODEL_FILE = "efficientnet-trained.h5" (can use if locally trained model available)
-
+# S3 Configuration
+MODEL_URL = "https://efficientnet-trained-model-bucket.s3.eu-north-1.amazonaws.com/efficientnet-trained.h5"
+LOCAL_MODEL_PATH = "efficientnet-trained.h5"
 
 
 @st.cache_resource
-def load_classification_model(model_path):
+def load_model_from_s3(url, local_path):
+    """
+    Downloads the model from S3 if not present, then loads it into TensorFlow.
+    Uses st.cache_resource to keep the model in memory.
+    """
+    # 1. Download the file if it doesn't exist locally
+    if not os.path.exists(local_path):
+        try:
+            with st.spinner(f'Downloading model from S3... this may take a minute.'):
+                response = requests.get(url, stream=True)
+                response.raise_for_status()  # Raise error for bad status codes
+
+                with open(local_path, "wb") as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        f.write(chunk)
+            st.success("Model downloaded successfully!")
+        except Exception as e:
+            st.error(f"Error downloading model from S3: {e}")
+            return None
+
+    # 2. Load the model using Keras
     try:
-        model = tf.keras.models.load_model(model_path)
+        model = tf.keras.models.load_model(local_path)
         return model
     except Exception as e:
+        st.error(f"Error loading model from file: {e}")
         return None
 
 
@@ -61,12 +80,11 @@ if app_mode == "Project Overview":
         This application utilizes a Deep Learning model based on **EfficientNetB3** to classify Leukemia from microscopic blood cell images.
 
         **Model Architecture:**
-        *   **Base:** EfficientNetB3 (Pre-trained on ImageNet)
-        *   **Custom Head:** 
-            *   Batch Normalization
-            *   Dense (256 units, ReLU, L1/L2 Regularization)
-            *   Dropout (0.45)
-            *   Output Dense (2 units, Softmax)
+        * **Base:** EfficientNetB3 (Pre-trained on ImageNet)
+        * **Custom Head:** * Batch Normalization
+            * Dense (256 units, ReLU, L1/L2 Regularization)
+            * Dropout (0.45)
+            * Output Dense (2 units, Softmax)
 
         **Optimizer:** Adamax (LR=0.001)
         """)
@@ -89,6 +107,7 @@ elif app_mode == "Evaluation Metrics":
 
     st.markdown("### Training History")
 
+    # Hardcoded metrics for visualization purposes
     epochs = list(range(1, 20))
     train_acc = [82.485, 88.756, 91.088, 92.428, 93.648, 94.184, 94.666, 95.417, 97.293,
                  97.856, 98.258, 98.459, 99.049, 98.847, 99.317, 99.558, 99.223, 99.571, 99.611]
@@ -132,16 +151,8 @@ elif app_mode == "Evaluation Metrics":
 elif app_mode == "Live Prediction":
     st.title("Live Model Prediction")
 
-    model = None
-    if os.path.exists(MODEL_FILE):
-        model = load_classification_model(MODEL_FILE)
-        if model:
-            st.success(f"Successfully loaded model: **{MODEL_FILE}**")
-        else:
-            st.error(f"Failed to load **{MODEL_FILE}**. Please check if the file is corrupted.")
-    else:
-        st.error(f"Model file **{MODEL_FILE}** not found in the directory.")
-        st.info(f"Please ensure '{MODEL_FILE}' is in the same folder as this script.")
+    # Load Model from S3 using the cached function
+    model = load_model_from_s3(MODEL_URL, LOCAL_MODEL_PATH)
 
     if model:
         st.markdown("### Upload Cell Image")
@@ -179,6 +190,8 @@ elif app_mode == "Live Prediction":
                         with st.expander("See probability details"):
                             prob_df = pd.DataFrame(prediction, columns=[c.upper() for c in CLASS_NAMES])
                             st.dataframe(prob_df.style.format("{:.2%}"))
+    else:
+        st.error("Model could not be loaded. Please check the S3 URL or your internet connection.")
 
 st.markdown("---")
-st.markdown("Created based on Leukemia Classification Jupyter Notebook | Model: " + MODEL_FILE)
+st.markdown("Created based on Leukemia Classification Jupyter Notebook | Source: S3 Bucket")
