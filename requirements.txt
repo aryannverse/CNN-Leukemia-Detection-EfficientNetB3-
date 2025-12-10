@@ -10,3 +10,5 @@ jupyter
 plotly
 pillow
 requests
+h5py
+boto
