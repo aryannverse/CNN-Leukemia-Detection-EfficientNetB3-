@@ -144,3 +144,10 @@ Launch Jupyter to view and run the training process.
 jupyter notebook Leukemia_Classification.ipynb
 ```
 
+### 5. Run Streamlit app for metrics and live prediction.
+Either train your own model or use the pretrained model in the repo and run the streamlit app using:
+```bash
+streamlit run leukemia_app.py
+```
+
+
